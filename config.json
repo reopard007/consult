@@ -1,6 +1,6 @@
 {
   "default": "codex",
-  "fallback_order": ["codex", "gemini", "opus"],
+  "fallback_order": ["codex", "opus"],
   "timeout_seconds": 300,
   "advisors": {
     "codex": {
@@ -9,13 +9,6 @@
       "args": ["exec", "--sandbox", "read-only", "--skip-git-repo-check", "-"],
       "input": "stdin",
       "label": "OpenAI Codex"
-    },
-    "gemini": {
-      "type": "cli",
-      "bin": "agy",
-      "args": ["-p", "{PROMPT}", "--sandbox"],
-      "input": "arg",
-      "label": "Google Gemini (Antigravity CLI)"
     },
     "grok": {
       "type": "cli",
