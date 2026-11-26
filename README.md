@@ -6,11 +6,7 @@ Claude Code 用のスキル。Claude Code 純正の `/advisor` の代わりに�
 
 Claude Code 純正の `/advisor` は、メインモデルより強いモデルに「方針決定前・エラー連発時・完了宣言前」の3場面で自動相談する実験的機能。サーバ側で管理される仕組みのため、利用者側からアドバイザーの選択や実行条件を細かく制御しにくい場合がある。
 
-<<<<<<< HEAD
 このスキルは同種の場面（`SKILL.md` では4つの場面）での相談を自前実装したもの。アドバイザーを自由に選べ、Codex / Grok のような Claude 以外のモデルにも相談できる。
-=======
-このスキルは同じ3場面での相談を自前実装したもの。アドバイザーを自由に選べ、Codex / Grok のような Claude 以外のモデルにも相談できる。
->>>>>>> origin/main
 
 ## 要件
 
@@ -18,11 +14,8 @@ Claude Code 純正の `/advisor` は、メインモデルより強いモデル�
 - bash
 - [jq](https://jqlang.org/)
 - 相談先として使いたい CLI（[Codex CLI](https://github.com/openai/codex)、Grok CLI など）。設定した advisor のうち、実際にインストール済みのものだけが使われる。
-<<<<<<< HEAD
-=======
 
 > **Gemini（Antigravity CLI `agy`）について**: 以前は advisor に含めていたが、2026-11-22 に外した。Antigravity の [FAQ](https://antigravity.google/docs/faq) と [追加規約](https://antigravity.google/terms) では、個人向けの契約で Claude Code などサードパーティのエージェントやアプリが `agy` を起動・ラップすることは認められていないため。自分で `config.json` に追加する場合も、契約条件を確認すること。
->>>>>>> origin/main
 
 ## インストール
 
@@ -67,11 +60,7 @@ ln -s ~/path/to/consult ~/.claude/skills/consult
 {
   "default": "codex",
   "fallback_order": ["codex", "opus"],
-<<<<<<< HEAD
   "timeout_seconds": 900,
-=======
-  "timeout_seconds": 300,
->>>>>>> origin/main
   "advisors": {
     "codex": {
       "type": "cli",
