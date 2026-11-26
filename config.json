@@ -1,7 +1,7 @@
 {
   "default": "codex",
   "fallback_order": ["codex", "opus"],
-  "timeout_seconds": 300,
+  "timeout_seconds": 900,
   "advisors": {
     "codex": {
       "type": "cli",

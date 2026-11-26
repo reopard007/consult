@@ -2,6 +2,8 @@
 # consult.sh — CLI 型アドバイザーのディスパッチャー
 #
 # Usage: consult.sh <advisor-name|default> <briefing-file>
+#   CONSULT_NO_FALLBACK=1 を付けると、指定した相手が失敗しても次へ切り替えずに止まる
+#   CONSULT_TIMEOUT_SECONDS=<秒> でその回だけタイムアウトを変えられる
 #
 # 責務:
 #   1. config.json からアドバイザー名を解決する
@@ -28,7 +30,8 @@ BRIEFING_FILE="$2"
 [[ -f "$CONFIG_FILE" ]] || { echo "ERROR: config not found: $CONFIG_FILE" >&2; exit 2; }
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq is required but not found in PATH" >&2; exit 2; }
 
-TIMEOUT_SECONDS="$(jq -r '.timeout_seconds // 300' "$CONFIG_FILE")"
+# タイムアウト秒数の優先順位: 環境変数 CONSULT_TIMEOUT_SECONDS > config.json > 既定900
+TIMEOUT_SECONDS="${CONSULT_TIMEOUT_SECONDS:-$(jq -r '.timeout_seconds // 900' "$CONFIG_FILE")}"
 
 resolve_name() {
   local name="$1"
@@ -146,7 +149,7 @@ run_advisor() {
 RESOLVED_NAME="$(resolve_name "$REQUESTED")"
 
 declare -a ATTEMPT_ORDER=("$RESOLVED_NAME")
-while IFS= read -r n; do
+[[ "${CONSULT_NO_FALLBACK:-0}" == "1" ]] || while IFS= read -r n; do
   already=0
   for existing in "${ATTEMPT_ORDER[@]}"; do
     [[ "$existing" == "$n" ]] && already=1 && break
