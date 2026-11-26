@@ -4,9 +4,12 @@
 # Usage: consult.sh <advisor-name|default> <briefing-file>
 #   CONSULT_NO_FALLBACK=1 を付けると、指定した相手が失敗しても次へ切り替えずに止まる
 #   CONSULT_TIMEOUT_SECONDS=<秒> でその回だけタイムアウトを変えられる
+#   CONSULT_LOCAL_CONFIG=<パス> で PC ごとの上書きファイルの場所を変えられる
+#     （既定 ${XDG_CONFIG_HOME:-~/.config}/consult/config.json。あれば config.json に重ねる）
 #
 # 責務:
-#   1. config.json からアドバイザー名を解決する
+#   1. config.json（と PC ごとの上書きファイル）からアドバイザー名を解決する
+#      disabled に挙がったアドバイザーは、この PC では使わないものとして飛ばす
 #   2. type=cli のアドバイザーのみ扱う（claude-agent は Agent tool 側の責務）
 #   3. command -v で可用性を検出し、無ければ fallback_order の次へ自動切替
 #   4. briefing を input 方式（stdin / 引数展開）で渡し、タイムアウト付きで実行
@@ -15,7 +18,8 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="$SCRIPT_DIR/../config.json"
+BASE_CONFIG="$SCRIPT_DIR/../config.json"
+LOCAL_CONFIG="${CONSULT_LOCAL_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/consult/config.json}"
 
 usage() {
   echo "Usage: $(basename "$0") <advisor-name|default> <briefing-file>" >&2
@@ -27,8 +31,19 @@ REQUESTED="$1"
 BRIEFING_FILE="$2"
 
 [[ -f "$BRIEFING_FILE" ]] || { echo "ERROR: briefing file not found: $BRIEFING_FILE" >&2; exit 2; }
-[[ -f "$CONFIG_FILE" ]] || { echo "ERROR: config not found: $CONFIG_FILE" >&2; exit 2; }
+[[ -f "$BASE_CONFIG" ]] || { echo "ERROR: config not found: $BASE_CONFIG" >&2; exit 2; }
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq is required but not found in PATH" >&2; exit 2; }
+
+# PC ごとの上書きファイルがあれば config.json に重ねる。
+# オブジェクト（advisors など）は中まで重ね、値や配列（default・fallback_order・disabled）は上書きファイルの方を使う。
+CONFIG_FILE="$BASE_CONFIG"
+if [[ -f "$LOCAL_CONFIG" ]]; then
+  MERGED_CONFIG="$(mktemp)"
+  trap 'rm -f "$MERGED_CONFIG"' EXIT
+  jq -s '.[0] * .[1]' "$BASE_CONFIG" "$LOCAL_CONFIG" > "$MERGED_CONFIG" \
+    || { echo "ERROR: 上書きファイルを読めません: $LOCAL_CONFIG" >&2; exit 2; }
+  CONFIG_FILE="$MERGED_CONFIG"
+fi
 
 # タイムアウト秒数の優先順位: 環境変数 CONSULT_TIMEOUT_SECONDS > config.json > 既定900
 TIMEOUT_SECONDS="${CONSULT_TIMEOUT_SECONDS:-$(jq -r '.timeout_seconds // 900' "$CONFIG_FILE")}"
@@ -50,6 +65,11 @@ run_advisor() {
 
   if [[ -z "$adv_json" ]]; then
     echo "ERROR: unknown advisor '$name' in config.json" >&2
+    return 1
+  fi
+
+  if jq -e --arg n "$name" '(.disabled // []) | index($n)' "$CONFIG_FILE" >/dev/null; then
+    echo "SKIP: advisor '$name' はこの PC では使わない設定です（disabled）" >&2
     return 1
   fi
 
