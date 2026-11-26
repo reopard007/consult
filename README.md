@@ -93,6 +93,17 @@ codex の args の `-c model_reasoning_effort=medium` は、consult から呼ぶ
 
 - `CONSULT_TIMEOUT_SECONDS=<秒>` — タイムアウトを上書きする（優先順位は環境変数 > `config.json` > 既定900秒）。Codex は300秒を超える応答がよくあり、Claude Code の Bash tool は600秒で切れるので、SKILL.md では `run_in_background: true` で起動する。
 - `CONSULT_NO_FALLBACK=1` — 指定した相手が失敗しても次の相手へ切り替えずに止まる。外部に出せない情報を含む相談で、別のサービスへ自動で渡らないようにするときに使う。
+- `CONSULT_LOCAL_CONFIG=<パス>` — 下の「PC ごとの上書き」のファイルの場所を変える。
+
+### PC ごとの上書き
+
+`config.json` はリポジトリで共有するので、PC ごとに変えたいことは `~/.config/consult/config.json`（`$XDG_CONFIG_HOME` があればその下）に、変えたいキーだけを書く。`consult.sh` と SKILL.md の手順は、このファイルがあれば `config.json` に重ねて使う。オブジェクト（`advisors`）は中まで重ね、値や配列（`default`・`fallback_order`・`disabled`）は上書きファイルの方を使う。
+
+`disabled` には、その PC で使わないアドバイザーの名前を並べる。例えば、Codex を契約していない PC で、外部 CLI を使わず Claude Opus にだけ相談するなら:
+
+```json
+{ "default": "opus", "fallback_order": ["opus"], "disabled": ["codex", "grok"] }
+```
 
 ### advisor サブエージェント（任意）
 
